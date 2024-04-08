@@ -1,0 +1,16 @@
+save_dir: "output_linear_1000_20_20"
+data_dir: "../data_linear_1000"
+window_size: 150
+predict_num: 20
+nu: 1000
+pca_dim: 4
+dic_model: 20
+dd_model: 32
+dd_ff: 128
+u_model: 32
+u_ff: 128
+N_Control: 6
+N_State: 6
+lr: 0.001
+batch_size: 256
+num_epochs: 300

@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+
+        {
+            "name": "Python: Train Model",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/train_model.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--config",
+                "config_linear_1000_20_4.yaml"
+            ],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
