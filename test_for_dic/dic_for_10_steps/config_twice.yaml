@@ -1,0 +1,16 @@
+save_dir: /home/shiqi/code/model_combination_Argos/test_for_dic/dic_for_10_steps
+data_dir: /home/shiqi/code/model_combination_Argos/data_dir/data_linear_1000
+predict_num: 10
+window_size: 140
+slice_len: 10
+num_epochs: 2500
+batch_size: 512
+lr: 0.001
+step_size: 100
+gamma: 0.8
+pca_dim: 4
+dic_model: 20
+dd_model: 128
+N_State: 6
+Ku_ff: 256
+N_Matrix: 6
