@@ -40,7 +40,7 @@ class PCAKoopman(nn.Module):
         u = self.std_layer_u.transform(u)
         u = self.control_encoder(u)
         y = self.state_matrix(x, nu) + self.control_matrix(u, nu)
-        # y = self.std_layer_2.inverse_transform(y)
+        y = self.std_layer_2.inverse_transform(y)
         y = self.pca_transformer.inverse_transform(y)
         y = self.std_layer_1.inverse_transform(y)
         return y
@@ -59,12 +59,12 @@ class PCAKoopman(nn.Module):
     def encode(self, x):
         x = self.std_layer_1.transform(x)
         x = self.pca_transformer.transform(x)
-        # x = self.std_layer_2.transform(x)
+        x = self.std_layer_2.transform(x)
         return x
     
     def decode(self, x):
         x = x[:, 1:self.params.pca_dim+1]
-        # x = self.std_layer_2.inverse_transform(x)
+        x = self.std_layer_2.inverse_transform(x)
         x = self.pca_transformer.inverse_transform(x)
         x = self.std_layer_1.inverse_transform(x)
         return x
@@ -141,6 +141,16 @@ class PCAKoopmanWithInputsInMatrix(nn.Module):
         x = self.std_layer_1.inverse_transform(x)
         return x
     
+    def pca_forward(self, x_pca, u, nu):
+        x_psi = self.state_dic(x_pca)
+        u = self.std_layer_u.transform(u)
+        K = self.state_matrix(u, nu)
+        x_psi_extended = x_psi.unsqueeze(1)
+        y_psi = torch.matmul(x_psi_extended, K).squeeze(1)
+        y_pca = y_psi[:, 1:self.params.pca_dim+1]
+        return y_pca
+
+    
     def latent_to_latent_forward(self, x_psi, u, nu):
         u = self.std_layer_u.transform(u)
         K = self.state_matrix(u, nu)
@@ -163,6 +173,12 @@ class PCAKoopmanWithInputsInMatrix(nn.Module):
     def decode(self, psi_x):
         x = psi_x[:, 1:self.params.pca_dim+1]
         x = self.std_layer_2.inverse_transform(x)
+        x = self.pca_transformer.inverse_transform(x)
+        x = self.std_layer_1.inverse_transform(x)
+        return x
+    
+    def pca_decode(self, x_pca):
+        x = self.std_layer_2.inverse_transform(x_pca)
         x = self.pca_transformer.inverse_transform(x)
         x = self.std_layer_1.inverse_transform(x)
         return x

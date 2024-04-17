@@ -74,4 +74,8 @@ def read_data_from_txt(file_path):
 if __name__ == '__main__':
     args = parse_args()
     config = read_config_file(args.config)
+    if not os.path.exists(config['data_dir']):
+        raise TypeError(f"Data directory {config['data_dir']} not found.")
+    if not os.path.exists(config['save_dir']):
+        os.makedirs(config['save_dir'], exist_ok=True)
     read_data_with_freqs(config)

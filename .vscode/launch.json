@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "Python: test train_model.py",
             "type": "python",
@@ -18,6 +19,14 @@
             "request": "launch",
             "program": "test_for_dic/train_model.py",
             "args": ["--config", "test_for_dic/dic_for_10_steps/config_twice.yaml"],
+            "console": "integratedTerminal"
+        }
+        {
+            "name": "Python: test the extracted loss in pca_from_formulation/train_model.py",
+            "type": "python",
+            "request": "launch",
+            "program": "pca_from_formulation/train_model.py",
+            "args": ["--config", "/home/shiqi/code/model_combination_Argos/pca_from_formulation/output/experiment_2/config.yaml"],
             "console": "integratedTerminal"
         }
     ]

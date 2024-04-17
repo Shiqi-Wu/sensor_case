@@ -1,7 +1,7 @@
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 import sys
-sys.path.append('../utils')
+sys.path.append('/home/shiqi/code/model_combination_Argos/utils')
 print(sys.path)
 import numpy as np
 import torch
@@ -54,6 +54,23 @@ def koopman_loss(model, x, u, nu):
         x_pred[:, i, :] = x_pred_cur
         x_true[:, i, :] = model.state_dic(x_latent[:, i, :])
     loss = loss_fn(x_pred, x_true)
+    return loss
+
+def koopman_loss_extract(model, x, u, nu):
+    loss_fn = nn.MSELoss()
+    N = x.shape[1]
+    if N <= 1:
+        raise ValueError('Number of time steps should be greater than 1')
+    
+    x_latent = model.encode(x)
+    x0 = x_latent[:, 0, :]
+    x_pred = torch.zeros_like(x_latent, dtype=torch.float32, device=x.device)
+
+    x_pred[:, 0, :] = x0
+    for i in range(1, N):
+        x_pred_cur = model.pca_forward(x0, u[:, i, :], nu[:, i, :])
+        x_pred[:, i, :] = x_pred_cur
+    loss = loss_fn(x_pred, x_latent)
     return loss
 
 def koopman_loss_DicWithInputs(model, x, u, nu):
@@ -116,7 +133,7 @@ def main(config):
 
     # Data loader
     x_data, u_data, nu_data, n_features, n_inputs = data_preparation_xu(config, nu_list, nu)
-
+        
     # Params
     params = km.Params(n_features, n_inputs, config)
 
@@ -129,7 +146,10 @@ def main(config):
         loss_fn = koopman_loss_DicWithInputs
     elif config['experiment'] == 'MatrixWithInputs':
         model = km.build_model_MatrixWithInputs(params, x_data, u_data)
-        loss_fn = koopman_loss
+        if config.get('loss', 'non_extract') == 'extract':
+            loss_fn = koopman_loss_extract
+        else:
+            loss_fn = koopman_loss
     else:
         raise ValueError('Experiment not supported')
     
