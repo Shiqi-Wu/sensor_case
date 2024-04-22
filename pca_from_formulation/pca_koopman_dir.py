@@ -544,7 +544,7 @@ class Params:
     def __init__(self, x_dim, u_dim, config):
         self.x_dim = x_dim
         self.u_dim = u_dim
-        self.nu_list = [config['nu']]   # To-do
+        self.nu_list = config['nu_list']   # To-do
         self.pca_dim = config.get('pca_dim', 4)
         self.dic_model = config.get('dic_model', 20)
         self.d_model = 1+ self.pca_dim + self.dic_model
