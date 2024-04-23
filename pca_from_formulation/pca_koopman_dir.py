@@ -182,7 +182,53 @@ class PCAKoopmanWithInputsInMatrix(nn.Module):
         x = self.pca_transformer.inverse_transform(x)
         x = self.std_layer_1.inverse_transform(x)
         return x
+
+class PCAKoopmanWithInputsInDicAndStd(nn.Module):
+    def __init__(self, params, std_layer_1, pca_transformer, std_layer_2, std_layer_u, state_dic, state_matrix):
+        super(PCAKoopmanWithInputsInDicAndStd, self).__init__()
+        self.params = params
+        self.std_layer_1 = std_layer_1
+        self.std_layer_u = std_layer_u
+        self.pca_transformer = pca_transformer
+        self.std_layer_2 = std_layer_2
+        self.state_dic = state_dic
+        self.state_matrix = state_matrix
     
+    def forward(self, x, u, nu):
+        x = self.std_layer_1.transform(x, nu)
+        x = self.pca_transformer.transform(x)
+        x = self.std_layer_2.transform(x)
+        u = self.std_layer_u.transform(u)
+        x = self.state_dic(x, u)
+        x = self.state_matrix(x, nu)
+        x = self.std_layer.inverse_transform(x)
+        x = self.pca_transformer.inverse_transform(x)
+        x = self.std_layer_1.inverse_transform(x)
+        return x
+    
+    def latent_to_latent_forward(self, x, u, nu):
+        u = self.std_layer_u.transform(u)
+        x = self.state_dic(x, u)
+        x = self.state_matrix(x, nu)
+        return x[:, 1:self.params.pca_dim+1]
+    
+    def dic(self, x, u):
+        u = self.std_layer_u.transform(u)
+        x = self.encode(x)
+        x = self.state_dic(x, u)
+        return x
+
+    def encode(self, x, nu):
+        x = self.std_layer_1.transform(x, nu)
+        x = self.pca_transformer.transform(x)
+        x = self.std_layer_2.transform(x)
+        return x
+    
+    def decode(self, x, nu):
+        x = self.std_layer_2.inverse_transform(x)
+        x = self.pca_transformer.inverse_transform(x)
+        x = self.std_layer_1.inverse_transform(x, nu)
+        return x
 class StateMatrix_With_Input(nn.Module):
     def __init__(self, params, Matrix_NN):
         # nu_list should be a list without repeated values
@@ -408,7 +454,23 @@ class StdScalerLayer(nn.Module):
     
     def inverse_transform(self, input):
         return input * self.std + self.mean
-
+    
+class StdScalerLayerSet(nn.Module):
+    def __init__(self, StdScalerLayers):
+        super(StdScalerLayerSet, self).__init__()
+        self.StdScalerLayers = StdScalerLayers
+    
+    def transform(self, x, nu):
+        y = torch.zeros_like(x).to(x.device)
+        for i in range(len(self.StdScalerLayers)):
+            y += nu[:, i:i+1] * self.StdScalerLayers[i].transform(x)
+        return y
+    
+    def inverse_transform(self, x, nu):
+        y = torch.zeros_like(x).to(x.device)
+        for i in range(len(self.StdScalerLayers)):
+            y += nu[:, i:i+1] * self.StdScalerLayers[i].inverse_transform(x)
+        return y
 
 def build_model(params, x_data, u_data):
     x_data = torch.tensor(x_data, dtype=torch.float32)
@@ -558,3 +620,52 @@ class Params:
         self.Ku_size = config.get('Ku_size', 256)
         self.Ku_ff = config.get('Ku_ff', 256)
         self.N_Matrix = config.get('N_Matrix', 6)
+
+def build_model_DicWithInputs_multi_nu(params, x_dataset, u_dataset):
+    # Std Layer 1
+    std_layers_1_set = torch.nn.ModuleList()
+    x_dataset_scaled = []
+    for x_data in (x_dataset):
+        x_data = torch.tensor(x_data, dtype=torch.float32)
+        mean_1 = torch.mean(x_data, dim=0)
+        std_1 = torch.std(x_data, dim=0)
+        std_layer_1 = StdScalerLayer(mean_1, std_1)
+        std_layers_1_set.append(std_layer_1)
+        x_data_scaled = std_layer_1.transform(x_data)
+        x_dataset_scaled.append(x_data_scaled)
+    
+    std_layer_1 = StdScalerLayerSet(std_layers_1_set)
+
+    # Std Layer u
+    u_data = np.concatenate(u_dataset, axis=0)
+    u_data = torch.tensor(u_data, dtype=torch.float32)  # Ensure u_data is also a Tensor
+    mean_u = torch.mean(u_data, dim=0)
+    std_u = torch.std(u_data, dim=0)
+    std_layer_u = StdScalerLayer(mean_u, std_u)
+
+    # PCA layer
+    x_data_scaled = torch.cat(x_dataset_scaled, dim=0)
+    pca = PCA(n_components=params.pca_dim)
+    # Ensure x_data_scaled is converted back to a NumPy array for PCA, if necessary
+    x_pca = pca.fit_transform(x_data_scaled.cpu().detach().numpy())
+    components = pca.components_
+    pca_matrix = torch.tensor(components, dtype=torch.float32)
+    pca_layer = PCALayer(params.x_dim, params.pca_dim, pca_matrix)
+
+    x_pca_tensor = torch.tensor(x_pca, dtype=torch.float32)
+
+    # Std Layer 2
+    mean_2 = torch.mean(x_pca_tensor, dim=0)
+    std_2 = torch.std(x_pca_tensor, dim=0)
+    std_layer_2 = StdScalerLayer(mean_2, std_2)
+
+    # State dictionary
+    state_dic = State_Encoder_With_Inputs(params)
+
+    # State Matrix
+    state_matrix = StateMatrix_sum(params)
+
+    model = PCAKoopmanWithInputsInDicAndStd(params, std_layer_1, pca_layer, std_layer_2, std_layer_u, state_dic, state_matrix)
+    x_pca_scaled = std_layer_2.transform(x_pca_tensor)
+    return model, x_pca_scaled
+
