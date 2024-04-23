@@ -5,6 +5,7 @@
     "version": "0.2.0",
     "configurations": [
 
+
         {
             "name": "Python: test train_model.py",
             "type": "python",
@@ -27,6 +28,14 @@
             "request": "launch",
             "program": "pca_from_formulation/train_model.py",
             "args": ["--config", "/home/shiqi/code/model_combination_Argos/pca_from_formulation/output/experiment_2/config.yaml"],
+            "console": "integratedTerminal"
+        }
+        {
+            "name": "Python: test the nulti nus in pca_from_formulation/train_model.py",
+            "type": "python",
+            "request": "launch",
+            "program": "pca_from_formulation/train_model.py",
+            "args": ["--config", "/home/shiqi/code/model_combination_Argos/pca_from_formulation/output/experiment_10/config.yaml"],
             "console": "integratedTerminal"
         }
     ]

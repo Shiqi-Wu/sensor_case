@@ -76,8 +76,8 @@ def data_preparation_xu(config, nu_list, nu):
         if os.path.exists(data_file_path):
             data_dict = np.load(data_file_path, allow_pickle=True).item()
             x_data, _, u_data, _ = load_dataset(data_dict)
-            x_dataset.append(x_data[:window_size])
-            u_dataset.append(u_data[:window_size])
+            x_dataset.append(x_data[1:window_size])
+            u_dataset.append(u_data[1:window_size])
         else:
             print(f"File not found: {data_file_path}")
 
