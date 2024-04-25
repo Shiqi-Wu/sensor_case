@@ -4,6 +4,7 @@ data_dir_list:
   - "/home/shiqi/code/model_combination_Argos/data_dir/data_linear_100"
   - "/home/shiqi/code/model_combination_Argos/data_dir/data_linear_500"
   - "/home/shiqi/code/model_combination_Argos/data_dir/data_linear_1000"
+
 window_size: 150
 predict_num: 30
 nu_list:

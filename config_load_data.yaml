@@ -1,2 +1,2 @@
-data_dir: "../ArgosMOR/data_linear_500/"
-save_dir: "data_linear_500/"
+data_dir: "../ArgosMOR/data_linear_100_test/"
+save_dir: "data_dir/data_linear_100_test/"
