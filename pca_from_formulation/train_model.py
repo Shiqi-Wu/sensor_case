@@ -1,7 +1,7 @@
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 import sys
-sys.path.append('/home/shiqi/code/model_combination_Argos/utils')
+sys.path.append('/home/shiqi/code/Project2-sensor-case/model_combination_Argos/utils')
 print(sys.path)
 import numpy as np
 import torch
@@ -112,12 +112,17 @@ def koopman_loss_DicWithInputs_pca_ver(model, x_pca, u, nu):
 def train_one_epoch(model, train_loader, optimizer, loss_fn, device):
     model.train()
     total_loss = 0
+    i = 0
     for x, u, nu in train_loader:
         x, u, nu = x.to(device), u.to(device), nu.to(device)
         optimizer.zero_grad()
         loss = loss_fn(model, x, u, nu)
+        if torch.isnan(loss).any() or torch.isinf(loss).any():
+            print(f"Batch {i}: Loss is nan or inf, stopping training.")
+            break
+        i += 1
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
         optimizer.step()
         total_loss += loss.item()
     return total_loss/len(train_loader)
@@ -402,7 +407,12 @@ def main_multinu_ver2(config):
     params = km.Params(n_features, n_inputs, config)
 
     # Model
-    model, x_pca_scaled = km.build_model_DicWithInputs_multi_nu(params, x_dataset, u_dataset)
+    if config['experiment'] == 'linear':
+        model, x_pca_scaled = km.build_model_linear_multi_nu(params, x_dataset, u_dataset)
+    if config['experiment'] == 'DicWithInputs':
+        model, x_pca_scaled = km.build_model_DicWithInputs_multi_nu(params, x_dataset, u_dataset)
+    if config['experiment'] == 'MatrixWithInputs':
+        model, x_pca_scaled = km.build_model_MatrixWithInputs_multi_nu(params, x_dataset, u_dataset)
     model = model.to(device)
 
     # Rescale and Slices
