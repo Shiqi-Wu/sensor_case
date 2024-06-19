@@ -73,7 +73,7 @@ def data_preparation_xu(config, nu_list, nu):
         data_file_path = os.path.join(data_dir, item)
 
         # Check if the file exists before trying to load it
-        if os.path.exists(data_file_path):
+        if os.path.exists(data_file_path) and data_file_path.endswith('.npy'):
             data_dict = np.load(data_file_path, allow_pickle=True).item()
             x_data, _, u_data, _ = load_dataset(data_dict)
             x_dataset.append(x_data[1:window_size])
@@ -102,7 +102,7 @@ def data_preparation_xuscaled(config, nu_list, nu):
     u_dataset = []
 
 
-    for item in os.listdir(data_dir):
+    for item in os.listdir(data_dir) and item.endswith('.npy'):
         data_file_path = os.path.join(data_dir, item)
 
         # Check if the file exists before trying to load it

@@ -19,7 +19,6 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
 import copy
-from joblib import dump, load
 
 scaler_x = StandardScaler()
 scaler_u = StandardScaler()
@@ -50,7 +49,7 @@ def koopman_loss(model, x, u, nu):
     x_pred[:, 0, :] = x0
     x_true[:, 0, :] = x0
     for i in range(1, N):
-        x_pred_cur = model.latent_to_latent_forward(x0, u[:, i, :], nu[:, i, :])
+        x_pred_cur = model.latent_to_latent_forward(x0, u[:, i - 1, :], nu[:, i - 1, :])
         x_pred[:, i, :] = x_pred_cur
         x_true[:, i, :] = model.state_dic(x_latent[:, i, :])
     loss = loss_fn(x_pred, x_true)
@@ -68,7 +67,7 @@ def koopman_loss_extract(model, x, u, nu):
 
     x_pred[:, 0, :] = x0
     for i in range(1, N):
-        x_pred_cur = model.pca_forward(x0, u[:, i, :], nu[:, i, :])
+        x_pred_cur = model.pca_forward(x0, u[:, i - 1, :], nu[:, i - 1, :])
         x_pred[:, i, :] = x_pred_cur
     loss = loss_fn(x_pred, x_latent)
     return loss
@@ -85,7 +84,7 @@ def koopman_loss_DicWithInputs(model, x, u, nu):
     x_pred = torch.zeros_like(x_pca, dtype=torch.float32, device=x.device)
     x_pred[:, 0, :] = x0
     for i in range(1, N):
-        x1 = model.latent_to_latent_forward(x0, u[:, i, :], nu[:, i, :])
+        x1 = model.latent_to_latent_forward(x0, u[:, i-1, :], nu[:, i-1, :])
         x_pred[:, i, :] = x1
         x0 = x1
     
@@ -102,7 +101,7 @@ def koopman_loss_DicWithInputs_pca_ver(model, x_pca, u, nu):
     x_pred = torch.zeros_like(x_pca, dtype=torch.float32, device=x_pca.device)
     x_pred[:, 0, :] = x0
     for i in range(1, N):
-        x1 = model.latent_to_latent_forward(x0, u[:, i, :], nu[:, i, :])
+        x1 = model.latent_to_latent_forward(x0, u[:, i-1, :], nu[:, i-1, :])
         x_pred[:, i, :] = x1
         x0 = x1
     
