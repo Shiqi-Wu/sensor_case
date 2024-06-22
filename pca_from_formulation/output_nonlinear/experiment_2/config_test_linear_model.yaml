@@ -1,0 +1,23 @@
+# Dic With Inputs Without zero data
+save_dir: "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/pca_from_formulation/output_nonlinear/experiment_2"
+data_dir_list: 
+  - "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_20240621"
+test_dir_list: 
+  - "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_test_20240621"
+window_size: 150
+predict_num: 30
+nu_list:
+  - 0
+pca_dim: 4
+dic_model: 40
+dd_model: 128
+dd_ff: 128
+u_model: 32
+u_dic_model: 0
+u_ff: 128
+N_Control: 6
+N_State: 6
+lr: 0.001
+batch_size: 512
+num_epochs: 2500
+experiment: "linear"
