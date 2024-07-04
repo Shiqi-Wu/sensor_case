@@ -56,6 +56,8 @@ def build_nu(nu_list, data_len, nu):
     for i, item in enumerate(nu_list):
         if nu==item:
             nu_data[:,i] = 1
+            print(i)
+            # print(nu_data)
     return nu_data
 
 def data_preparation_xu(config, nu_list, nu):

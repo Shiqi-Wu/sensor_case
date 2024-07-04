@@ -392,6 +392,7 @@ def main_multinu_ver2(config):
     # todo: multi nu
     nu_list = config['nu_list']
 
+    # -------------REAL DATA----------------
     # Data loader
     x_dataset, u_dataset, nu_dataset = [], [], []
     for i in range(len(nu_list)):
@@ -401,6 +402,7 @@ def main_multinu_ver2(config):
         x_dataset.append(x_data)
         u_dataset.append(u_data)
         nu_dataset.append(nu_data)
+    # -------------REAL DATA----------------
 
     # Params
     params = km.Params(n_features, n_inputs, config)
@@ -412,8 +414,9 @@ def main_multinu_ver2(config):
         model, x_pca_scaled = km.build_model_DicWithInputs_multi_nu(params, x_dataset, u_dataset)
     if config['experiment'] == 'MatrixWithInputs':
         model, x_pca_scaled = km.build_model_MatrixWithInputs_multi_nu(params, x_dataset, u_dataset)
-    model = model.to(device)
 
+    model = model.to(device)
+    
     # Rescale and Slices
     x_data = x_pca_scaled.cpu().numpy()
     u_data = np.concatenate(u_dataset, axis=0)
@@ -494,11 +497,162 @@ def main_multinu_ver2(config):
 
 
 
+def main_cookup_data(config):
+    # Save dir
+    save_dir = config['save_dir']
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    # Device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print('Device:', device)
+
+    # nu_list = config['nu_list']
+
+     ## -------------Cookup Data----------------
+    # Set the random seed for reproducibility
+    seed = config['seed']
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+
+    # Define the dimensions
+    state_dim = 4  # Dimension of the state vector x_n
+    control_dim = 2  # Dimension of the control vector u_n
+    num_trajectories = 5000  # Number of different initial states x_0
+    trajectory_length = 2  # Number of steps for each trajectory
+
+    # Initialize the matrices A and B
+    A = torch.randn(state_dim, state_dim)
+    B = torch.randn(state_dim, control_dim)
+
+    # Initialize the datasets
+    x_dataset = []
+    u_dataset = []
+    nu_dataset = []
+
+    # Generate the trajectories
+    for i in range(num_trajectories):
+        x_n = torch.randn(state_dim)  # Initial state x_0
+        x_traj = []
+        u_traj = []
+        nu_traj = np.ones((trajectory_length, 1))  # nu_dataset with all ones
+        for t in range(trajectory_length):
+            x_traj.append(x_n.numpy())
+            u_n = torch.randn(control_dim)  # Random control input u_n
+            x_n = A @ x_n + B @ u_n  # Compute the next state x_{n+1}
+            u_traj.append(u_n.numpy())
+        x_dataset.append(np.array(x_traj))
+        u_dataset.append(np.array(u_traj))
+        nu_dataset.append(nu_traj)
+    
+    x_data = np.concatenate(x_dataset, axis=0)
+    u_data = np.concatenate(u_dataset, axis=0)
+    nu_data = np.concatenate(nu_dataset, axis=0)
+
+    # Params
+    params = km.Params(state_dim, control_dim, config)
+
+    # Model
+    if config['experiment'] == 'linear':
+        model, x_pca_scaled = km.build_model_linear_multi_nu(params, [x_data], [u_data])
+    if config['experiment'] == 'DicWithInputs':
+        model, x_pca_scaled = km.build_model_DicWithInputs_multi_nu(params,[x_data], [u_data])
+    if config['experiment'] == 'MatrixWithInputs':
+        model, x_pca_scaled = km.build_model_MatrixWithInputs_multi_nu(params, [x_data], [u_data])
+    model = model.to(device)
+
+    print(model)
+
+    # Rescale and Slices
+    x_data = x_pca_scaled.cpu().numpy()
+    u_data = np.concatenate(u_dataset, axis=0)
+    nu_data = np.concatenate(nu_dataset, axis=0)
+    print(x_data.shape)
+    print(u_data.shape)
+    print(nu_data.shape)
+
+    window_size = config['window_size']
+    predict_num = config['predict_num']
+    x_data_slices = cut_slides(x_data, window_size, predict_num)
+    u_data_slices = cut_slides(u_data, window_size, predict_num)
+    nu_data_slices = cut_slides(nu_data, window_size, predict_num)
+    
+
+    x_data = np.concatenate(x_data_slices, axis=0)
+    u_data = np.concatenate(u_data_slices, axis=0)
+    nu_data = np.concatenate(nu_data_slices, axis=0)
+    
+
+    shuffled_indices = np.arange(len(x_data))
+    np.random.shuffle(shuffled_indices)
+
+    x_data = x_data[shuffled_indices]
+    u_data = u_data[shuffled_indices]
+    nu_data = nu_data[shuffled_indices]
+    print(x_data.shape)
+
+
+    x_train, x_test, u_train, u_test, nu_train, nu_test = train_test_split(x_data, u_data, nu_data, test_size=0.2, random_state=42)
+
+    x_train = torch.tensor(x_train, dtype=torch.float32)
+    u_train = torch.tensor(u_train, dtype=torch.float32)
+    nu_train = torch.tensor(nu_train, dtype=torch.float32)
+    x_test = torch.tensor(x_test, dtype=torch.float32)
+    u_test = torch.tensor(u_test, dtype=torch.float32)
+    nu_test = torch.tensor(nu_test, dtype=torch.float32)
+
+    train_dataset = TensorDataset(x_train, u_train, nu_train)
+    test_dataset = TensorDataset(x_test, u_test, nu_test)
+
+    train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=config['batch_size'], shuffle=False)
+
+    # Optimizer
+    optimizer = Adam(model.parameters(), lr=config['lr'])
+    scheduler = StepLR(optimizer, step_size=100, gamma=0.8)
+
+    # Loss function
+    loss_fn = koopman_loss_DicWithInputs_pca_ver
+
+    # Train
+    train_losses = []
+    test_losses = []
+    best_model_wts = copy.deepcopy(model.state_dict())
+    best_loss = float('inf')
+    for epoch in range(config['num_epochs']):
+        train_loss = train_one_epoch(model, train_loader, optimizer, loss_fn, device)
+        test_loss = test_one_epoch(model, test_loader, loss_fn, device)
+        print(f'Epoch {epoch+1}/{config["num_epochs"]}, Train Loss: {train_loss}, Test Loss: {test_loss}')
+        train_losses.append(train_loss)
+        test_losses.append(test_loss)
+        scheduler.step()
+
+        if test_loss < best_loss:
+            best_loss = test_loss
+            best_model_wts = copy.deepcopy(model.state_dict())
+    
+    torch.save(best_model_wts, os.path.join(save_dir, 'model.pth'))
+
+    # Plot
+    plt.figure()
+    plt.plot(train_losses, label='Train Loss')
+    plt.plot(test_losses, label='Test Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.yscale('log')
+    plt.legend()
+    plt.savefig(os.path.join(save_dir, 'loss.png'))
+    np.save(os.path.join(save_dir, 'train_losses.npy'), train_losses)
+    np.save(os.path.join(save_dir, 'test_losses.npy'), test_losses)
+
 if __name__ == '__main__':
     args = parse_arguments()
     config = read_config_file(args.config)
-    # main(config) 
-    main_multinu_ver2(config)      
+    main_multinu_ver2(config)
+    # main_cookup_data(config)   
+
+
+
 
 
 

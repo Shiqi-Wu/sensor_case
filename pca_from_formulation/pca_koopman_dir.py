@@ -337,7 +337,7 @@ class StateMatrix_sum(nn.Module):
         self.length = len(params.nu_list)
         self.k_matrices = nn.ModuleList()
         for _ in range(self.length):
-            self.k_matrices.append(nn.Linear(self.k_size, self.k_size))        
+            self.k_matrices.append(nn.Linear(self.k_size, self.k_size, bias=False))        
         
 
     def forward(self, x, nu):
@@ -361,7 +361,7 @@ class ControlMatrix_sum(nn.Module):
         self.length = len(params.nu_list)
         self.k_matrices = nn.ModuleList()
         for _ in range(self.length):
-            self.k_matrices.append(nn.Linear(self.u_size, self.k_size))        
+            self.k_matrices.append(nn.Linear(self.u_size, self.k_size, bias=False))        
         
 
     def forward(self, x, nu):
