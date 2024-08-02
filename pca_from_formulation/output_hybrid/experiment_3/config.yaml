@@ -1,0 +1,32 @@
+save_dir: "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/pca_from_formulation/output_hybrid/experiment_3"
+model_dir: "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/pca_from_formulation/output/experiment_16"
+data_dir_list: 
+  - "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_linear_100"
+  - "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_linear_500"
+  - "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_linear_1000"
+test_dir_list:
+  - "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_linear_100_test"
+  - "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_linear_500_test"
+  - "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_linear_1000_test"
+fit_data_dir: "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_20240621"
+window_size: 150
+predict_num: 10
+nu_list:
+  - 100
+  - 500
+  - 1000
+pca_dim: 4
+dic_model: 40
+dd_model: 128
+dd_ff: 128
+u_model: 32
+u_dic_model: 0
+u_ff: 128
+N_Control: 6
+N_State: 6
+num_epochs: 200
+learning_rate: 0.001
+iterations: 100
+NN_nodes_num: 64
+num_hidden_layers: 1
+experiment: "linear"

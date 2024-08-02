@@ -217,6 +217,19 @@ class PCAKoopmanWithInputsInStd(nn.Module):
         x = self.pca_transformer.inverse_transform(x)
         x = self.std_layer_1.inverse_transform(x, nu)
         return x
+    
+    def scaled_to_scaled_forward(self, x_scaled, u, nu):
+        x_pca = self.pca_transformer.transform(x_scaled)
+        x_pca_scaled = self.std_layer_2.transform(x_pca)
+        u_scaled = self.std_layer_u.transform(u)
+        x_psi = self.state_dic(x_pca_scaled)
+        nu = nu.unsqueeze(0).repeat(x_scaled.shape[0], 1)
+        u = self.control_encoder(u_scaled)
+        y_psi = self.state_matrix(x_psi, nu) + self.control_matrix(u, nu)
+        y_pca_sclaed = y_psi[:, 1:self.params.pca_dim+1]
+        y_pca = self.std_layer_2.inverse_transform(y_pca_sclaed)
+        y = self.pca_transformer.inverse_transform(y_pca)
+        return y
 class PCAKoopmanWithInputsInDicAndStd(nn.Module):
     def __init__(self, params, std_layer_1, pca_transformer, std_layer_2, std_layer_u, state_dic, state_matrix):
         super(PCAKoopmanWithInputsInDicAndStd, self).__init__()
@@ -300,6 +313,20 @@ class PCAKoopmanWithInputsInMatrixAndStd(nn.Module):
         x = self.pca_transformer.inverse_transform(x)
         x = self.std_layer_1.inverse_transform(x, nu)
         return x
+    
+    def scaled_to_scaled_forward(self, x_scaled, u, nu):
+        x_pca = self.pca_transformer.transform(x_scaled)
+        x_pca_scaled = self.std_layer_2.transform(x_pca)
+        u_scaled = self.std_layer_u.transform(u)
+        x_psi = self.state_dic(x_pca_scaled)
+        nu = nu.unsqueeze(0).repeat(x_scaled.shape[0], 1)
+        K = self.state_matrix(u_scaled, nu)
+        x_psi_extended = x_psi.unsqueeze(1)
+        y_psi = torch.matmul(x_psi_extended, K).squeeze(1)
+        y_pca_sclaed = y_psi[:, 1:self.params.pca_dim+1]
+        y_pca = self.std_layer_2.inverse_transform(y_pca_sclaed)
+        y = self.pca_transformer.inverse_transform(y_pca)
+        return y
 
 class StateMatrix_With_Input(nn.Module):
     def __init__(self, params, Matrix_NN):
@@ -399,7 +426,7 @@ class State_Encoder(nn.Module):
                 y = layer(y)
             y = self.output_layer(y)
             ones = torch.ones(x.shape[0], 1).to(x.device)
-            y = torch.cat((ones, x, y), dim = 1)
+            y = torch.cat((ones, x, y), dim = -1)
             return y
 class Control_Encoder(nn.Module):
     "Implements State dictionary"
@@ -628,7 +655,7 @@ def build_model(params, x_data, u_data):
     state_dic = State_Encoder(params)
 
     # Control Encoder
-    control_encoder = ControlEncoder(params)
+    control_encoder = Control_Encoder_FullyNonlinear(params)
 
     # State Matrix
     state_matrix = StateMatrix_sum(params)
