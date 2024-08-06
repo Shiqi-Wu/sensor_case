@@ -131,7 +131,7 @@ def data_preparation_xuscaled(config, nu_list, nu):
 
     return x_data_scaled, u_data_scaled, nu_data, n_features, n_inputs
 
-def cut_slides(data, window_size, predict_num):
+def cut_slices(data, window_size, predict_num):
     data_slices = []
     for i in range(0, data.shape[0], window_size):
         for j in range(window_size - predict_num + 1):

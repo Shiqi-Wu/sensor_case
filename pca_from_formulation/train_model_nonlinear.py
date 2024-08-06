@@ -260,8 +260,8 @@ class ResidualModelWithPCA(nn.Module):
         x_pca = self.pca_transformer.transform(x_scaled)
         x_pca = self.std_layer_x2.transform(x_pca)
         x_pred = self.model(x_pca, u_scaled)
-        x_pred = self.std_layer_x2.inverse_transform(x_pred)
-        x_pred = self.pca_transformer.inverse_transform(x_pred)
+        # x_pred = self.std_layer_x2.inverse_transform(x_pred)
+        # x_pred = self.pca_transformer.inverse_transform(x_pred)
         x_pred = self.std_layer_err.inverse_transform(x_pred)
         return x_pred
 
@@ -533,7 +533,7 @@ def iterative_training(config, pre_trained_model, dataset):
         components = pca.components_
         pca_matrix = torch.tensor(components, dtype=torch.float32).to(device)
         pca_layer = km.PCALayer(n_features, config['PCA_dim'], pca_matrix)
-        residual_NN = SimpleNN(config['PCA_dim'] + n_inputs, config['NN_nodes_num'], config['PCA_dim'], num_hidden_layers=config['num_hidden_layers'])
+        residual_NN = SimpleNN(config['PCA_dim'] + n_inputs, config['NN_nodes_num'], n_features, num_hidden_layers=config['num_hidden_layers'])
         x_data_pca = torch.tensor(x_data_pca, dtype=torch.float32).to(device)
         std_layer_x2 = km.StdScalerLayer(torch.mean(x_data_pca, dim=0), torch.std(x_data_pca, dim=0))
     else:
@@ -552,9 +552,9 @@ def iterative_training(config, pre_trained_model, dataset):
             else:
                 residual_model = train_residual_model(linear_model, residual_NN, std_layer_x, std_layer_u, dataset, num_epochs, learning_rate, device)
         else:
-            x_data_slices = cut_slides(x_data, config['window_size'] - 1, config['predict_num'])
-            y_data_slices = cut_slides(y_data, config['window_size'] - 1, config['predict_num'])
-            u_data_slices = cut_slides(u_data, config['window_size'] - 1, config['predict_num'])
+            x_data_slices = cut_slices(x_data, config['window_size'] - 1, config['predict_num'])
+            y_data_slices = cut_slices(y_data, config['window_size'] - 1, config['predict_num'])
+            u_data_slices = cut_slices(u_data, config['window_size'] - 1, config['predict_num'])
 
             x_data_slices = torch.cat(x_data_slices, dim=0)
             y_data_slices = torch.cat(y_data_slices, dim=0)

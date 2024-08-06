@@ -84,7 +84,7 @@ def plot_mean_relative_diff(x_true_traj_train, x_pred_traj_train, x_true_traj_te
 
     plt.figure(figsize=(10, 4))
     
-    plt.plot(mean_relative_diffs_train, color='mediumseagreen')
+    plt.plot(mean_relative_diffs_train, label = 'Training Set', color='mediumseagreen')
     if x_true_traj_test is not None and x_pred_traj_test is not None:
         plt.plot(mean_relative_diffs_test, label='Validation Set', color='pink')
     
@@ -134,3 +134,38 @@ def calculate_relative_error_set(x_true, x_pred):
     row_norm_diff = np.linalg.norm(x_true - x_pred, axis=1, ord=2)
     total_norm_true = np.linalg.norm(x_true, ord='fro')
     return row_norm_diff / total_norm_true
+
+
+def plot_relative_error_boxplot(x_true_traj_train, x_pred_traj_train, x_true_traj_test=None, x_pred_traj_test=None):
+    mean_relative_errors_train = []
+    mean_relative_errors_test = []
+    
+    for i in range(len(x_true_traj_train)):
+        mean_relative_errors_train.append(calculate_relative_error(x_true_traj_train[i], x_pred_traj_train[i]))
+    
+    if x_true_traj_test is not None and x_pred_traj_test is not None:
+        for i in range(len(x_true_traj_test)):
+            mean_relative_errors_test.append(calculate_relative_error(x_true_traj_test[i], x_pred_traj_test[i]))
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+
+    data = [mean_relative_errors_train]
+    labels = ['Training Set']
+
+    if x_true_traj_test is not None and x_pred_traj_test is not None:
+        data.append(mean_relative_errors_test)
+        labels.append('Validation Set')
+
+    boxprops_train = dict(facecolor='yellowgreen', color='black')
+    boxprops_test = dict(facecolor='pink', color='black')
+
+    boxplots = ax.boxplot(data, patch_artist=True, labels=labels)
+
+    for patch, props in zip(boxplots['boxes'], [boxprops_train, boxprops_test] if len(data) > 1 else [boxprops_train]):
+        patch.set_facecolor(props['facecolor'])
+        patch.set_edgecolor(props['color'])
+
+    ax.set_xlabel('Relative Error')
+    ax.set_title('Relative Error Distribution')
+    
+    plt.show()

@@ -9,6 +9,7 @@ test_dir_list:
   - "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_linear_500_test"
   - "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_linear_1000_test"
 fit_data_dir: "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_20240621"
+fit_data_dir_test: "/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_20240621_test"
 window_size: 150
 predict_num: 10
 nu_list:

@@ -24,7 +24,7 @@ u_dic_model: 0
 u_ff: 128
 N_Control: 6
 N_State: 6
-num_epochs: 200
+num_epochs: 50
 learning_rate: 0.001
 iterations: 100
 NN_nodes_num: 64
