@@ -428,6 +428,7 @@ class State_Encoder(nn.Module):
             ones = torch.ones(x.shape[0], 1).to(x.device)
             y = torch.cat((ones, x, y), dim = -1)
             return y
+        
 class Control_Encoder(nn.Module):
     "Implements State dictionary"
     def __init__(self, params):
