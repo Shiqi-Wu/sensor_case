@@ -3,7 +3,7 @@ train_data_dir: '/home/shiqi/code/Project2-sensor-case/model_combination_Argos/d
 test_data_dir: '/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_20240621_test'
 pca_dim: 4
 begin: 1
-end: 2
+end: 151
 dic_model: 40
 dd_model: 64
 dd_ff: 128
@@ -12,8 +12,8 @@ u_dic_model: 20
 u_model: 64
 u_ff: 64
 window_size: 150
-num_epoches: 1000
-num_iterations: 30
+num_epoches: 500
+num_iterations: 5
 batch_size: 64
 learning_rate: 0.001
 predict_num: 10
