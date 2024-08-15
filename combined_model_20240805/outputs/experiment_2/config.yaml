@@ -1,4 +1,4 @@
-save_dir: '/home/shiqi/code/Project2-sensor-case/model_combination_Argos/combined_model_20240805/outputs/experiment_1'
+save_dir: '/home/shiqi/code/Project2-sensor-case/model_combination_Argos/combined_model_20240805/outputs/experiment_2'
 train_data_dir: '/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_20240621'
 test_data_dir: '/home/shiqi/code/Project2-sensor-case/model_combination_Argos/data_dir/data_20240621_test'
 pca_dim: 4
@@ -17,4 +17,4 @@ num_iterations: 10
 batch_size: 1024
 learning_rate: 0.001
 predict_num: 10
-err_scaler: False
+err_scaler: True
