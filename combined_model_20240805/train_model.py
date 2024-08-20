@@ -546,12 +546,12 @@ def generate_hybrid_trajectories(x_dataset, u_dataset, linear_model, residual_mo
     x_data_pca_pred_traj = []
     window_size = len(x_dataset[0])
     steps = window_size
-    print(f'window_size: {window_size}')
+    # print(f'window_size: {window_size}')
 
     for x_data, u_data in zip(x_dataset, u_dataset):
         x_data = torch.tensor(x_data, dtype=torch.float32).to(device)
         u_data = torch.tensor(u_data, dtype=torch.float32).to(device)
-        print(x_data.shape, u_data.shape)
+        # print(x_data.shape, u_data.shape)
         x_pred = torch.zeros_like(x_data).to(device)
         x_pred[0, :] = x_data[0, :]
         x0 = encode_state(x_data[0:1, :], std_layer_1, pca_transformer, std_layer_2)
@@ -569,7 +569,6 @@ def generate_hybrid_trajectories(x_dataset, u_dataset, linear_model, residual_mo
 
         x_data_pca_traj.append(x_pca_true)
         x_data_pca_pred_traj.append(x_pca_pred)
-        break
     
     return x_data_pred_traj, x_data_pca_traj, x_data_pca_pred_traj
 
@@ -863,6 +862,7 @@ def main_evaluate():
     # Calculate mean relative error
     mean_relative_errors_train = calculate_mean_relative_error_set(x_dataset_train, x_data_pred_traj_train)
     mean_relative_errors_test = calculate_mean_relative_error_set(x_dataset_test, x_data_pred_traj_test)
+    # print(x_data_pred_traj_train)
 
     # Calculate mean relative diff
     mean_relative_diffs_train = calculate_mean_relative_diff_set(x_dataset_train, x_data_pred_traj_train)
