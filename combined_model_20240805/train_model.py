@@ -228,6 +228,7 @@ def iterative_training(dataset, linear_model, residual_model, config, num_iter=1
     # Initialize the linear model
     x_data, y_data, u_data = dataset
     linear_model = linear_regression(dataset, linear_model, device)
+    # linear_model = train_linear_model_singlestep([x_data, y_data, u_data], linear_model, device)
 
     # Iterative training
     iterative_losses = []
@@ -237,6 +238,7 @@ def iterative_training(dataset, linear_model, residual_model, config, num_iter=1
 
         err_data = y_data - residual_model.latent_to_latent_forward(x_data, u_data, std_layer_err).detach()
         linear_model = linear_regression([x_data, err_data, u_data], linear_model, device)
+        # linear_model = train_linear_model_singlestep([x_data, err_data, u_data], linear_model, device)
         linear_pred = linear_model(x_data, u_data).detach()
         print(x_data.shape, u_data.shape, std_layer_err.mean.shape, std_layer_err.std.shape)
         residual_pred = residual_model.latent_to_latent_forward(x_data, u_data, std_layer_err).detach()
@@ -652,6 +654,7 @@ def main():
     # Linear model
     linear_model = Linear_model(config['pca_dim']+1, u_dim)
 
+
     # Residual model
     params = Params(x_dim, u_dim, config)
     state_dict = State_Encoder(params)
@@ -662,12 +665,35 @@ def main():
     x_dataset_train, u_dataset_train = load_evaluation_data(config['begin'], config['end'], config['train_data_dir'])
     x_dataset_test, u_dataset_test = load_evaluation_data(config['begin'], config['end'], config['test_data_dir'])
 
-    # ## Baseline 1: Train linear model
-    # linear_model = linear_regression(dataset, linear_model, device)
+    ## Baseline 1: Train linear model
+    linear_model = linear_regression(dataset, linear_model, device)
 
-    # # Evaluation
-    # x_data_pred_traj_train, x_data_pca_traj_train, x_data_pca_pred_traj_train = generate_linear_trajectories(x_dataset_train, u_dataset_train, linear_model, std_layer_1, pca_layer, std_layer_2, std_layer_u, device)
-    # x_data_pred_traj_test, x_data_pca_traj_test, x_data_pca_pred_traj_test = generate_linear_trajectories(x_dataset_test, u_dataset_test, linear_model, std_layer_1, pca_layer, std_layer_2, std_layer_u, device)
+    # Evaluation
+    x_data_pred_traj_train, x_data_pca_traj_train, x_data_pca_pred_traj_train = generate_linear_trajectories(x_dataset_train, u_dataset_train, linear_model, std_layer_1, pca_layer, std_layer_2, std_layer_u, device)
+    x_data_pred_traj_test, x_data_pca_traj_test, x_data_pca_pred_traj_test = generate_linear_trajectories(x_dataset_test, u_dataset_test, linear_model, std_layer_1, pca_layer, std_layer_2, std_layer_u, device)
+
+    # Calculate mean relative error
+    mean_relative_errors_train = calculate_mean_relative_error_set(x_dataset_train, x_data_pred_traj_train)
+    mean_relative_errors_test = calculate_mean_relative_error_set(x_dataset_test, x_data_pred_traj_test)
+
+    # Calculate mean relative diff
+    mean_relative_diffs_train = calculate_mean_relative_diff_set(x_dataset_train, x_data_pred_traj_train)
+    mean_relative_diffs_test = calculate_mean_relative_diff_set(x_dataset_test, x_data_pred_traj_test)
+
+    # Save results
+    np.save(config['save_dir'] + '/linear_mean_relative_errors_train.npy', mean_relative_errors_train)
+    np.save(config['save_dir'] + '/linear_mean_relative_errors_test.npy', mean_relative_errors_test)
+    np.save(config['save_dir'] + '/linear_mean_relative_diffs_train.npy', mean_relative_diffs_train)
+    np.save(config['save_dir'] + '/linear_mean_relative_diffs_test.npy', mean_relative_diffs_test)
+    torch.save(linear_model.state_dict(), config['save_dir'] + '/linear_model.pth')
+
+    # # Baseline 2: Train residual model only
+    # residual_model_2 = PCAKoopman(params, std_layer_1, pca_layer, std_layer_2, std_layer_u, state_dict, control_dict)
+    # residual_model_2, std_layer_err = train_residual_model(None, residual_model_2, dataset, config, config['num_epoches'], config['learning_rate'], device, config['err_scaler'])
+
+    # # Evaluation 
+    # x_data_pred_traj_train, x_data_pca_traj_train, x_data_pca_pred_traj_train = generate_residual_trajectories(x_dataset_train, u_dataset_train, residual_model_2, std_layer_1, pca_layer, std_layer_2, std_layer_err, device)
+    # x_data_pred_traj_test, x_data_pca_traj_test, x_data_pca_pred_traj_test = generate_residual_trajectories(x_dataset_test, u_dataset_test, residual_model_2, std_layer_1, pca_layer, std_layer_2, std_layer_err, device)
 
     # # Calculate mean relative error
     # mean_relative_errors_train = calculate_mean_relative_error_set(x_dataset_train, x_data_pred_traj_train)
@@ -678,59 +704,36 @@ def main():
     # mean_relative_diffs_test = calculate_mean_relative_diff_set(x_dataset_test, x_data_pred_traj_test)
 
     # # Save results
-    # np.save(config['save_dir'] + '/linear_mean_relative_errors_train.npy', mean_relative_errors_train)
-    # np.save(config['save_dir'] + '/linear_mean_relative_errors_test.npy', mean_relative_errors_test)
-    # np.save(config['save_dir'] + '/linear_mean_relative_diffs_train.npy', mean_relative_diffs_train)
-    # np.save(config['save_dir'] + '/linear_mean_relative_diffs_test.npy', mean_relative_diffs_test)
-    # torch.save(linear_model.state_dict(), config['save_dir'] + '/linear_model.pth')
+    # np.save(config['save_dir'] + '/residual_mean_relative_errors_train.npy', mean_relative_errors_train)
+    # np.save(config['save_dir'] + '/residual_mean_relative_errors_test.npy', mean_relative_errors_test)
+    # np.save(config['save_dir'] + '/residual_mean_relative_diffs_train.npy', mean_relative_diffs_train)
+    # np.save(config['save_dir'] + '/residual_mean_relative_diffs_test.npy', mean_relative_diffs_test)
+    # torch.save(residual_model_2.state_dict(), config['save_dir'] + '/residual_model.pth')
 
-    # Baseline 2: Train residual model only
-    residual_model_2 = PCAKoopman(params, std_layer_1, pca_layer, std_layer_2, std_layer_u, state_dict, control_dict)
-    residual_model_2, std_layer_err = train_residual_model(None, residual_model_2, dataset, config, config['num_epoches'], config['learning_rate'], device, config['err_scaler'])
+    # ## Iterative training
+    # linear_model, residual_model, std_layer_err, iterative_losses = iterative_training(dataset, linear_model, residual_model, config, config['num_iterations'], config['num_epoches'], config['learning_rate'], device)
+    # np.save(config['save_dir'] + '/iterative_losses.npy', iterative_losses)
 
-    # Evaluation 
-    x_data_pred_traj_train, x_data_pca_traj_train, x_data_pca_pred_traj_train = generate_residual_trajectories(x_dataset_train, u_dataset_train, residual_model_2, std_layer_1, pca_layer, std_layer_2, std_layer_err, device)
-    x_data_pred_traj_test, x_data_pca_traj_test, x_data_pca_pred_traj_test = generate_residual_trajectories(x_dataset_test, u_dataset_test, residual_model_2, std_layer_1, pca_layer, std_layer_2, std_layer_err, device)
+    # # Evaluation
+    # x_data_pred_traj_train, x_data_pca_traj_train, x_data_pca_pred_traj_train = generate_hybrid_trajectories(x_dataset_train, u_dataset_train, linear_model, residual_model, std_layer_1, pca_layer, std_layer_2, std_layer_u, std_layer_err, device)
+    # x_data_pred_traj_test, x_data_pca_traj_test, x_data_pca_pred_traj_test = generate_hybrid_trajectories(x_dataset_test, u_dataset_test, linear_model, residual_model, std_layer_1, pca_layer, std_layer_2, std_layer_u, std_layer_err, device)
 
-    # Calculate mean relative error
-    mean_relative_errors_train = calculate_mean_relative_error_set(x_dataset_train, x_data_pred_traj_train)
-    mean_relative_errors_test = calculate_mean_relative_error_set(x_dataset_test, x_data_pred_traj_test)
+    # # Calculate mean relative error
+    # mean_relative_errors_train = calculate_mean_relative_error_set(x_dataset_train, x_data_pred_traj_train)
+    # mean_relative_errors_test = calculate_mean_relative_error_set(x_dataset_test, x_data_pred_traj_test)
 
-    # Calculate mean relative diff
-    mean_relative_diffs_train = calculate_mean_relative_diff_set(x_dataset_train, x_data_pred_traj_train)
-    mean_relative_diffs_test = calculate_mean_relative_diff_set(x_dataset_test, x_data_pred_traj_test)
+    # # Calculate mean relative diff
+    # mean_relative_diffs_train = calculate_mean_relative_diff_set(x_dataset_train, x_data_pred_traj_train)
+    # mean_relative_diffs_test = calculate_mean_relative_diff_set(x_dataset_test, x_data_pred_traj_test)
 
-    # Save results
-    np.save(config['save_dir'] + '/residual_mean_relative_errors_train.npy', mean_relative_errors_train)
-    np.save(config['save_dir'] + '/residual_mean_relative_errors_test.npy', mean_relative_errors_test)
-    np.save(config['save_dir'] + '/residual_mean_relative_diffs_train.npy', mean_relative_diffs_train)
-    np.save(config['save_dir'] + '/residual_mean_relative_diffs_test.npy', mean_relative_diffs_test)
-    torch.save(residual_model_2.state_dict(), config['save_dir'] + '/residual_model.pth')
-
-    ## Iterative training
-    linear_model, residual_model, std_layer_err, iterative_losses = iterative_training(dataset, linear_model, residual_model, config, config['num_iterations'], config['num_epoches'], config['learning_rate'], device)
-    np.save(config['save_dir'] + '/iterative_losses.npy', iterative_losses)
-
-    # Evaluation
-    x_data_pred_traj_train, x_data_pca_traj_train, x_data_pca_pred_traj_train = generate_hybrid_trajectories(x_dataset_train, u_dataset_train, linear_model, residual_model, std_layer_1, pca_layer, std_layer_2, std_layer_u, std_layer_err, device)
-    x_data_pred_traj_test, x_data_pca_traj_test, x_data_pca_pred_traj_test = generate_hybrid_trajectories(x_dataset_test, u_dataset_test, linear_model, residual_model, std_layer_1, pca_layer, std_layer_2, std_layer_u, std_layer_err, device)
-
-    # Calculate mean relative error
-    mean_relative_errors_train = calculate_mean_relative_error_set(x_dataset_train, x_data_pred_traj_train)
-    mean_relative_errors_test = calculate_mean_relative_error_set(x_dataset_test, x_data_pred_traj_test)
-
-    # Calculate mean relative diff
-    mean_relative_diffs_train = calculate_mean_relative_diff_set(x_dataset_train, x_data_pred_traj_train)
-    mean_relative_diffs_test = calculate_mean_relative_diff_set(x_dataset_test, x_data_pred_traj_test)
-
-    # Save results
-    np.save(config['save_dir'] + '/hybrid_mean_relative_errors_train.npy', mean_relative_errors_train)
-    np.save(config['save_dir'] + '/hybrid_mean_relative_errors_test.npy', mean_relative_errors_test)
-    np.save(config['save_dir'] + '/hybrid_mean_relative_diffs_train.npy', mean_relative_diffs_train)
-    np.save(config['save_dir'] + '/hybrid_mean_relative_diffs_test.npy', mean_relative_diffs_test)
-    torch.save(linear_model.state_dict(), config['save_dir'] + '/hybrid_linear_model.pth')
-    torch.save(residual_model.state_dict(), config['save_dir'] + '/hybrid_residual_model.pth')
-    torch.save(std_layer_err.state_dict(), config['save_dir'] + '/hybrid_std_layer_err.pth')
+    # # Save results
+    # np.save(config['save_dir'] + '/hybrid_mean_relative_errors_train.npy', mean_relative_errors_train)
+    # np.save(config['save_dir'] + '/hybrid_mean_relative_errors_test.npy', mean_relative_errors_test)
+    # np.save(config['save_dir'] + '/hybrid_mean_relative_diffs_train.npy', mean_relative_diffs_train)
+    # np.save(config['save_dir'] + '/hybrid_mean_relative_diffs_test.npy', mean_relative_diffs_test)
+    # torch.save(linear_model.state_dict(), config['save_dir'] + '/hybrid_linear_model.pth')
+    # torch.save(residual_model.state_dict(), config['save_dir'] + '/hybrid_residual_model.pth')
+    # torch.save(std_layer_err.state_dict(), config['save_dir'] + '/hybrid_std_layer_err.pth')
 
     return
 
@@ -876,4 +879,4 @@ def main_evaluate():
     return
 
 if __name__ == '__main__':
-    main_evaluate()
+    main()
